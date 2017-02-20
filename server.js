@@ -2,8 +2,8 @@ const Koa = require('koa');
 const app = new Koa();
 const Router = require('koa-router');
 const router = new Router();
-const url = require('url');
-const querystring = require('querystring');
+const bodyParser = require('koa-bodyparser');
+
 let clients = [];
 
 
@@ -17,34 +17,35 @@ router.get('/subscribe', async (ctx) => {
   // 2. хранить/запомнить
   // 3. ответить при появлении события на которое клиент подписан
   console.log('subribe');
+  
  let message = await new Promise((resolve, reject) => {
    clients.push(resolve);
+   
+   ctx.res.on('close', () => {
+     const err = new Error('Connection closed');
+     err.code = 'ECONNRESET';
+     reject(err);
+   });
  });
-
+  
  ctx.body = message;
 });
 
-router.get('/publish', async (ctx) => {
+router.post('/publish', async (ctx) => {
   // прочитать тело сообщения
   // подождать завершения чтения
   // отправить сообщение ожидающим клиентам
-  console.log('publish');
-  let queryUrl = url.parse(ctx.request.url).query;
-  let message = querystring.parse(queryUrl).message;
- 
-
-  let _emit = ctx.req.emit;
-  ctx.req.emit = function(event, ...args) {
-    console.log(event);
-    _emit.call(ctx.req, event, ...args);
-  };
   
+  console.log('publish');
+
   
   clients.forEach(function(client){
-     client(message);
+    client(ctx.request.body);
   });
 });
 
+app.use(bodyParser());
 app.use(router.routes());
+
 
 app.listen(3000);
