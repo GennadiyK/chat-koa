@@ -3,22 +3,14 @@ const app = new Koa();
 const Router = require('koa-router');
 const router = new Router();
 const bodyParser = require('koa-bodyparser');
-
+const serve = require('koa-static');
 let clients = [];
 
-
-router.get('/', async (ctx) => {
-  ctx.body = 'main page 1';
-});
-
 router.get('/subscribe', async (ctx) => {
-  // subribe - подписаться на событие
-  // 1. принять
-  // 2. хранить/запомнить
-  // 3. ответить при появлении события на которое клиент подписан
-  console.log('subribe');
+ 
+  console.log('subsribe');
   
- let message = await new Promise((resolve, reject) => {
+ let promise =  new Promise((resolve, reject) => {
    clients.push(resolve);
    
    ctx.res.on('close', () => {
@@ -28,22 +20,32 @@ router.get('/subscribe', async (ctx) => {
    });
  });
   
+  let message;
+  
+  try {
+    message = await promise;
+  } catch (err) {
+    if(err.code === 'ECONNRESET') return;
+     
+    throw err;
+  }
+  
  ctx.body = message;
 });
 
 router.post('/publish', async (ctx) => {
-  // прочитать тело сообщения
-  // подождать завершения чтения
-  // отправить сообщение ожидающим клиентам
-  
   console.log('publish');
-
-  
+  console.log(ctx.request.body.message);
   clients.forEach(function(client){
-    client(ctx.request.body);
+   
+    client(ctx.request.body.message);
   });
+  
+  clients = [];
+  ctx.body = 'ok';
 });
 
+app.use(serve('./public'));
 app.use(bodyParser());
 app.use(router.routes());
 
