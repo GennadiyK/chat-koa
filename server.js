@@ -5,7 +5,7 @@ const router = new Router();
 const bodyParser = require('koa-bodyparser');
 const serve = require('koa-static');
 let clients = [];
-
+//router
 router.get('/subscribe', async (ctx) => {
  
   console.log('subsribe');
